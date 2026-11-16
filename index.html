@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="واجهة تجريبية عربية لتتبع الشحنات من شركات الشحن المدعومة في السعودية من مكان واحد.">
+<title>وِجهة | تتبع شحنتك</title>
+<style>
+:root{--navy:#102c3b;--teal:#087f82;--mint:#dff3ef;--bg:#f4f7f8;--ink:#183342;--muted:#6c7d87;--line:#dce5e8;--white:#fff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Tahoma,Arial,sans-serif;color:var(--ink);line-height:1.7}
+header{background:var(--navy);color:white;padding:18px max(20px,calc((100% - 1060px)/2));display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:800;font-size:22px;letter-spacing:.3px}.brand small{display:block;color:#a9c8cf;font-size:11px;font-weight:400}
+.pill{font-size:12px;border:1px solid #55717d;border-radius:30px;padding:5px 12px;color:#d5e6e9}
+main{max-width:900px;margin:42px auto;padding:0 18px}
+.hero{text-align:center;margin-bottom:25px}.hero h1{font-size:32px;margin:0 0 8px;color:var(--navy)}.hero p{margin:0;color:var(--muted)}
+.search{background:white;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 12px 34px #102c3b0b}
+form{display:flex;gap:10px}.search input{flex:1;min-width:0;border:1px solid #cbd8dd;border-radius:10px;padding:15px;font:inherit;direction:ltr;text-align:left;font-size:17px}
+button{background:var(--teal);border:0;border-radius:10px;padding:0 25px;color:white;font:inherit;font-weight:bold;cursor:pointer}button:disabled{opacity:.6;cursor:wait}
+.hint{font-size:12px;color:var(--muted);margin:10px 2px 0}
+.demo{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:15px}.demo button{background:#edf5f5;color:#17676b;padding:7px 12px;font-size:12px}
+#message{margin-top:16px}.alert{padding:12px 14px;border-radius:10px;background:#fff5e6;color:#80520d;font-size:13px;border:1px solid #f1dfbd}.error{background:#fff0ef;color:#9b3029;border-color:#f1d0cd}
+.result{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;display:none}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:15px}
+.carrier{font-size:13px;color:var(--muted)}.number{font-size:14px;direction:ltr;text-align:right;color:var(--muted)}
+.status{display:inline-block;background:var(--mint);color:#08655f;padding:6px 12px;border-radius:30px;font-size:13px;font-weight:bold;margin-top:7px}
+.timeline{margin-top:18px}.event{position:relative;padding:0 25px 20px 0;border-right:2px solid #dce9e8;margin-right:7px}.event:last-child{border-right-color:transparent;padding-bottom:0}.event:before{content:"";position:absolute;right:-7px;top:5px;width:12px;height:12px;background:var(--teal);border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px var(--teal)}
+.event strong{display:block;font-size:14px}.event span{font-size:12px;color:var(--muted)}.event .loc{margin-right:8px}
+.disclaimer{font-size:12px;color:var(--muted);margin-top:18px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:24px}
+@media(max-width:600px){main{margin:28px auto}.hero h1{font-size:25px}form{flex-direction:column}form button{padding:13px}.search{padding:16px}}
+</style>
+</head>
+<body>
+<header><div class="brand">وِجهة <small>تتبع الشحنات من مكان واحد</small></div><span class="pill">نسخة تجريبية</span></header>
+<main>
+<section class="hero"><h1>وين وصلت شحنتك؟</h1><p>أدخل رقم التتبع وسنحاول تحديد شركة الشحن وعرض آخر تحديثات الشحنة.</p></section>
+<section class="search">
+<form id="trackForm"><input id="awb" autocomplete="off" placeholder="أدخل رقم التتبع" aria-label="رقم التتبع" required><button id="submit" type="submit">تتبّع الشحنة</button></form>
+<div class="hint">لا تحتاج إلى اختيار شركة الشحن. جرّب أحد أرقام الاختبار أدناه.</div>
+<div class="hint">للاختبار الواقعي استخدم رقم تتبع حقيقياً لشحنة لدى شركة مدعومة. أرقام الاختبار المنشورة في وثائق المزود قد تتطلب وضع Sandbox منفصلاً.</div>
+<div id="message" aria-live="polite"></div>
+</section>
+<section id="result" class="result">
+<div class="top"><div><div class="carrier" id="carrier"></div><div class="status" id="status"></div></div><div class="number" id="number"></div></div>
+<div class="timeline" id="timeline"></div>
+<div class="disclaimer">البيانات المعروضة مصدرها مزود تتبع خارجي وقد تتأخر عن تحديث شركة الشحن. لا تمثل هذه الصفحة شركة شحن ولا تضمن موعد التسليم.</div>
+</section>
+</main>
+<footer>وِجهة — نموذج أولي قيد الاختبار. لا نحفظ رقم التتبع أو بيانات الشحنة في هذا النموذج.</footer>
+<script>
+const API='/api/track';
+const arStatus={
+ created:'تم إنشاء الشحنة',picked_up:'تم استلام الشحنة',in_transit:'الشحنة في الطريق',
+ arrived_at_facility:'وصلت إلى مركز الفرز',out_for_delivery:'خرجت للتوصيل',
+ delivery_attempt_failed:'تعذر التسليم',delivered:'تم التسليم',returned_to_shipper:'إرجاع إلى المرسل',
+ return_in_transit:'الشحنة في طريق العودة',return_delivered:'تم إرجاع الشحنة',
+ cancelled:'تم إلغاء الشحنة',exception:'يوجد تحديث استثنائي',unknown:'حالة غير محددة'
+};
+const $=id=>document.getElementById(id);
+function dateText(value){
+ if(!value)return 'وقت التحديث غير متوفر';
+ const d=new Date(value);if(Number.isNaN(d.getTime()))return value;
+ return new Intl.DateTimeFormat('ar-SA',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Riyadh'}).format(d);
+}
+function safeText(v){return (v===undefined||v===null||v==='')?'':String(v)}
+function showError(msg){$('result').style.display='none';$('message').innerHTML='<div class="alert error">'+msg+'</div>'}
+function render(data,awb){
+ $('message').innerHTML='';$('result').style.display='block';
+ $('carrier').textContent=data.carrier_name||data.carrier||'شركة الشحن غير محددة';
+ $('number').textContent='رقم التتبع: '+awb;
+ const st=data.normalized_status||'unknown';
+ $('status').textContent=arStatus[st]||safeText(data.carrier_status)||arStatus.unknown;
+ const events=Array.isArray(data.events)?data.events.slice().reverse():[];
+ if(!events.length&&data.latest_event)events.push(data.latest_event);
+ $('timeline').innerHTML='';
+ if(!events.length){$('timeline').innerHTML='<div class="alert">تم العثور على سجل الشحنة، لكن لا توجد تفاصيل حركة متاحة حالياً.</div>';return}
+ events.forEach(ev=>{
+  const item=document.createElement('div');item.className='event';
+  const title=document.createElement('strong');
+  title.textContent=arStatus[ev.normalized_status]||ev.carrier_status_description||ev.description||'تحديث الشحنة';
+  const meta=document.createElement('span');
+  meta.textContent=dateText(ev.event_time||ev.timestamp);
+  const loc=safeText(ev.city||ev.location);
+  if(loc){const l=document.createElement('span');l.className='loc';l.textContent='• '+loc;meta.appendChild(l)}
+  item.append(title,meta);$('timeline').appendChild(item);
+ });
+}
+async function track(awb){
+ $('result').style.display='none';$('message').innerHTML='<div class="alert">جارٍ الاستعلام عن الشحنة…</div>';
+ $('submit').disabled=true;
+ try{
+  const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({awb,carrier:'aramex'})});
+  const data=await response.json();
+  if(!response.ok){
+   const code=data?.error?.type||data?.error?.code||'';
+   let msg='لم نتمكن من جلب بيانات الشحنة. تحقق من الرقم وحاول لاحقاً.';
+   if(response.status===404)msg='لم نعثر على شحنة بهذا الرقم لدى الشركات المدعومة.';
+   else if(response.status===422)msg='لم نتمكن من تحديد شركة الشحن لهذا الرقم.';
+   else if(response.status===429)msg='وصلنا إلى حد الاستعلامات المؤقت. انتظر قليلاً ثم أعد المحاولة.';
+   else if(response.status===501)msg='شركة الشحن معروفة، لكن التتبع المباشر غير متاح لها حالياً.';
+   else if(response.status>=500)msg='خدمة التتبع أو شركة الشحن غير متاحة مؤقتاً.';
+   showError(msg+' ('+code+')');return;
+  }
+  if(!data||!data.awb){showError('وصل رد غير مكتمل من مزود التتبع.');return}
+  render(data,awb);
+ }catch(e){
+  showError('تعذر الاتصال بخدمة التتبع. قد يكون هناك انقطاع مؤقت أو قيود اتصال من مزود الخدمة.');
+ }finally{$('submit').disabled=false}
+}
+$('trackForm').addEventListener('submit',e=>{e.preventDefault();const awb=$('awb').value.trim();if(awb)track(awb)});
+track(b.dataset.awb)}));
+</script>
+</body>
+</html>
