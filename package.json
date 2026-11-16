@@ -1,0 +1,12 @@
+{
+  "name": "wejha-tracking-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Arabic shipment tracking prototype with server-side TrackSA proxy",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
